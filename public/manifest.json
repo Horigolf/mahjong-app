@@ -1,0 +1,19 @@
+{
+  "name": "麻雀アプリ",
+  "short_name": "麻雀",
+  "description": "オンライン麻雀（リーチ麻雀）",
+  "start_url": "/",
+  "display": "standalone",
+  "orientation": "landscape",
+  "background_color": "#0e2a21",
+  "theme_color": "#1a4536",
+  "lang": "ja",
+  "icons": [
+    {
+      "src": "/icons/apple-touch-icon.png",
+      "sizes": "180x180",
+      "type": "image/png",
+      "purpose": "any maskable"
+    }
+  ]
+}

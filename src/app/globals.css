@@ -1,26 +1,156 @@
 @import "tailwindcss";
 
+@custom-variant game-compact (@media (max-height: 430px));
+
 :root {
-  --background: #ffffff;
-  --foreground: #171717;
+  --background: #171717;
+  --foreground: #e5e5e5;
+  --surface: #262626;
+  --muted: #a3a3a3;
 }
 
 @theme inline {
   --color-background: var(--background);
   --color-foreground: var(--foreground);
+  --color-surface: var(--surface);
+  --color-muted: var(--muted);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  height: 100%;
+  /* 横画面ゲーム向け: タッチ操作時の不要なスクロール・タップハイライトを抑制 */
+  touch-action: manipulation;
+  -webkit-tap-highlight-color: transparent;
 }
 
 body {
+  margin: 0;
+  min-height: 100%;
+  min-height: 100dvh;
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), system-ui, sans-serif;
+  overscroll-behavior: none;
+}
+
+/* 対局卓: 軽い存在感のためのモーション */
+@keyframes game-table-in {
+  from {
+    opacity: 0;
+    transform: scale(0.985);
+  }
+  to {
+    opacity: 1;
+    transform: scale(1);
+  }
+}
+
+@keyframes game-hand-rise {
+  from {
+    opacity: 0.6;
+    transform: translateY(0.2rem);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+.game-table {
+  container-type: size;
+  container-name: game;
+  animation: game-table-in 420ms ease-out both;
+  /*
+   * 牌サイズ（手牌が見切れないよう上限を抑える）
+   */
+  --tile-h-lg: clamp(2.1rem, 12cqh, 2.85rem);
+  --tile-w-lg: clamp(1.5rem, 8.5cqh, 2.05rem);
+  --tile-h-md: clamp(1.7rem, 10cqh, 2.35rem);
+  --tile-w-md: clamp(1.2rem, 7cqh, 1.7rem);
+  --tile-h-sm: clamp(1.35rem, 8cqh, 1.85rem);
+  --tile-w-sm: clamp(0.95rem, 5.6cqh, 1.3rem);
+  --tile-h-xs: clamp(1.05rem, 6.5cqh, 1.45rem);
+  --tile-w-xs: clamp(0.75rem, 4.6cqh, 1.05rem);
+}
+
+/* 三麻: 右列はアクション用に残しつつやや狭く */
+.game-table.game-table--sanma {
+  grid-template-columns:
+    minmax(5.75rem, 7.75rem) minmax(0, 1fr) minmax(4.75rem, 6.25rem);
+}
+
+.game-table .game-dora-full,
+.game-table .game-scoreboard {
+  display: none;
+}
+
+/* 余裕がある端末（PC横など）では場況を厚く・点数一覧を出す */
+@media (min-height: 520px) {
+  .game-table .game-dora-compact {
+    display: none;
+  }
+
+  .game-table .game-dora-full {
+    display: block;
+  }
+
+  .game-table .game-scoreboard {
+    display: grid;
+  }
+}
+
+/* かなり低い横画面では副露をさらに抑える */
+@media (orientation: landscape) and (max-height: 380px) {
+  .game-table .game-side-meld {
+    display: none;
+  }
+}
+
+.game-table [aria-label="手牌"] > * {
+  animation: game-hand-rise 280ms ease-out both;
+}
+
+.game-table [aria-label="手牌"] > *:nth-child(1) {
+  animation-delay: 40ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(2) {
+  animation-delay: 70ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(3) {
+  animation-delay: 100ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(4) {
+  animation-delay: 130ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(5) {
+  animation-delay: 160ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(6) {
+  animation-delay: 190ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(7) {
+  animation-delay: 220ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(8) {
+  animation-delay: 250ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(9) {
+  animation-delay: 280ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(10) {
+  animation-delay: 310ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(11) {
+  animation-delay: 340ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(12) {
+  animation-delay: 370ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(13) {
+  animation-delay: 400ms;
+}
+.game-table [aria-label="手牌"] > *:nth-child(n + 14) {
+  animation-delay: 430ms;
 }
