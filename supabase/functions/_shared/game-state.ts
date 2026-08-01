@@ -220,6 +220,7 @@ export function findEligibleCallSeats(params: {
   roundWind: unknown;
   doraIndicators: Tile[];
   playerCount: number;
+  ruleConfig?: Record<string, unknown>;
 }): number[] {
   const {
     discarderSeat,
@@ -230,6 +231,7 @@ export function findEligibleCallSeats(params: {
     roundWind,
     doraIndicators,
     playerCount,
+    ruleConfig = {},
   } = params;
 
   const eligible: number[] = [];
@@ -253,6 +255,7 @@ export function findEligibleCallSeats(params: {
       roundWind: roundWindToTile(roundWind),
       isRiichi: Boolean(handRow.riichi_declared),
       doraIndicators,
+      ruleConfig,
     });
 
     if (pon || kan || chi || ron) {
@@ -709,6 +712,56 @@ export async function createDealtKyoku(
   return { kyokuId: kyoku.id as string, dealerDraw: extra };
 }
 
+/**
+ * 焼き鳥: 未和了者が、和了経験者それぞれに 1000 点ずつ支払う。
+ * 戻り値は席キーごとの点数差分（合計ゼロ）。
+ */
+export function computeYakitoriDeltas(
+  hasWon: Record<string, boolean>,
+  playerCount: number,
+  penaltyPerRecipient = 1000,
+): Record<string, number> {
+  const winners: number[] = [];
+  const losers: number[] = [];
+  for (let seat = 0; seat < playerCount; seat++) {
+    if (hasWon[String(seat)] === true) winners.push(seat);
+    else losers.push(seat);
+  }
+
+  const deltas: Record<string, number> = {};
+  for (let seat = 0; seat < playerCount; seat++) {
+    deltas[String(seat)] = 0;
+  }
+
+  if (winners.length === 0 || losers.length === 0) {
+    return deltas;
+  }
+
+  for (const loser of losers) {
+    for (const winner of winners) {
+      deltas[String(loser)]! -= penaltyPerRecipient;
+      deltas[String(winner)]! += penaltyPerRecipient;
+    }
+  }
+  return deltas;
+}
+
+/**
+ * 和了者席の has_won を true にする（既存マップを破壊しない）。
+ */
+export function markHasWon(
+  hasWon: Record<string, boolean> | null | undefined,
+  winnerSeat: number,
+  playerCount: number,
+): Record<string, boolean> {
+  const next: Record<string, boolean> = {};
+  for (let seat = 0; seat < playerCount; seat++) {
+    next[String(seat)] = hasWon?.[String(seat)] === true;
+  }
+  next[String(winnerSeat)] = true;
+  return next;
+}
+
 function applyUmaAndKyotaku(
   scores: Record<string, number>,
   umaRaw: unknown,
@@ -834,6 +887,49 @@ export async function advanceKyoku(
   }
 
   if (finished) {
+    // ウマの前に焼き鳥精算
+    if (ruleConfig.yakitori === true) {
+      const hasWon = (hanchan.has_won ?? {}) as Record<string, boolean>;
+      const yakitoriDeltas = computeYakitoriDeltas(hasWon, playerCount, 1000);
+      const { data: seatRows } = await supabase
+        .from("room_seats")
+        .select("seat_index, user_id")
+        .eq("room_id", room.id as string);
+
+      const yakitoriRows: Array<{
+        hanchan_id: string;
+        kyoku_id: null;
+        user_id: string | null;
+        seat: number;
+        points_delta: number;
+        reason: string;
+      }> = [];
+
+      for (const [seatKey, delta] of Object.entries(yakitoriDeltas)) {
+        if (delta === 0) continue;
+        const seat = Number(seatKey);
+        scores[seatKey] = (scores[seatKey] ?? 0) + delta;
+        const seatUser = (seatRows ?? []).find((s) => s.seat_index === seat);
+        yakitoriRows.push({
+          hanchan_id: hanchanId,
+          kyoku_id: null,
+          user_id: seatUser?.user_id ?? null,
+          seat,
+          points_delta: delta,
+          reason: "yakitori_penalty",
+        });
+      }
+
+      if (yakitoriRows.length > 0) {
+        const { error: yakitoriInsertError } = await supabase
+          .from("score_changes")
+          .insert(yakitoriRows);
+        if (yakitoriInsertError) {
+          throw new Error(yakitoriInsertError.message);
+        }
+      }
+    }
+
     scores = applyUmaAndKyotaku(
       scores,
       ruleConfig.uma,
@@ -1098,6 +1194,7 @@ export async function processDiscard(
     roundWind: state.kyoku.round_wind,
     doraIndicators: (state.kyoku.dora_indicators ?? []) as Tile[],
     playerCount,
+    ruleConfig: (state.room.rule_config ?? {}) as Record<string, unknown>,
   });
 
   const handsAfterDiscard = new Map<number, string[]>();

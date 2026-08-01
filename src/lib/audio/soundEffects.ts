@@ -27,7 +27,7 @@ const SE_PATHS: Record<SeId, string> = {
 };
 
 const bufferCache = new Map<string, AudioBuffer>();
-let seEnabled = true;
+let seEnabled = false;
 let seVolume = 0.7;
 
 export function setSeEnabled(enabled: boolean) {

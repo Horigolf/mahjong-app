@@ -37,6 +37,7 @@ function baseContext(overrides: Partial<WinContext> = {}): WinContext {
     seatWind: "1z",
     roundWind: "1z",
     gameType: "yonma",
+    ruleConfig: {},
     ...overrides,
   };
 }

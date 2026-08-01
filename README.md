@@ -23,6 +23,7 @@ Open [http://localhost:3000](http://localhost:3000).
 | `NEXT_PUBLIC_SUPABASE_URL` | 必須 | ブラウザにも露出 | Supabase Project URL（末尾に `/rest/v1/` は付けない） |
 | `NEXT_PUBLIC_SUPABASE_ANON_KEY` | 必須 | ブラウザにも露出 | Supabase anon / publishable key |
 | `SUPABASE_SERVICE_ROLE_KEY` | 必須（サーバー） | **サーバーのみ** | service_role 秘密鍵。Vercel でも設定する。ブラウザや `NEXT_PUBLIC_*` には載せない |
+| `ADMIN_USER_NAMES` | 任意 | **サーバーのみ** | 管理画面（`/admin`）を使える表示名。カンマ区切り（例: `堀`） |
 
 値の取得先: [Supabase Dashboard](https://supabase.com/dashboard) → 対象プロジェクト → **Project Settings → API**
 

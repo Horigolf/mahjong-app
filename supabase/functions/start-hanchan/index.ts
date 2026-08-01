@@ -117,26 +117,29 @@ Deno.serve(async (req) => {
         : 25000;
     const akaDora = ruleConfig.akaDora !== false;
 
-    const oyaSeat = 0;
-    const scores: Record<string, number> = {};
-    for (let i = 0; i < requiredSeats; i++) {
-      scores[String(i)] = startingPoints;
-    }
+  const oyaSeat = 0;
+  const scores: Record<string, number> = {};
+  const hasWon: Record<string, boolean> = {};
+  for (let i = 0; i < requiredSeats; i++) {
+    scores[String(i)] = startingPoints;
+    hasWon[String(i)] = false;
+  }
 
-    const { data: hanchan, error: hanchanError } = await supabase
-      .from("hanchans")
-      .insert({
-        room_id: roomId,
-        status: "in_progress",
-        scores,
-        honba: 0,
-        kyotaku: 0,
-        oya_seat: oyaSeat,
-        round_wind: "east",
-        round_number: 1,
-      })
-      .select("*")
-      .single();
+  const { data: hanchan, error: hanchanError } = await supabase
+    .from("hanchans")
+    .insert({
+      room_id: roomId,
+      status: "in_progress",
+      scores,
+      has_won: hasWon,
+      honba: 0,
+      kyotaku: 0,
+      oya_seat: oyaSeat,
+      round_wind: "east",
+      round_number: 1,
+    })
+    .select("*")
+    .single();
 
     if (hanchanError || !hanchan) {
       logError("hanchans insert", hanchanError ?? new Error("hanchan is null"));

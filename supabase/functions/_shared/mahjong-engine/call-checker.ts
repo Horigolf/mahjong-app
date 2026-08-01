@@ -59,6 +59,8 @@ export type RonCheckOptions = {
   nukiTiles?: Tile[];
   doraIndicators?: Tile[];
   uraDoraIndicators?: Tile[];
+  /** 部屋の rule_config（未指定時は {}＝喰いタン許可などデフォルト） */
+  ruleConfig?: Record<string, unknown>;
 };
 
 function buildRonContext(
@@ -86,6 +88,7 @@ function buildRonContext(
     seatWind: options.seatWind ?? "1z",
     roundWind: options.roundWind ?? "1z",
     gameType: options.gameType,
+    ruleConfig: options.ruleConfig ?? {},
   };
 }
 

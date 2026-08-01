@@ -2,6 +2,7 @@
 
 import { useEffect, useState } from "react";
 import { usePathname, useRouter } from "next/navigation";
+import { ChangePinModal } from "@/components/ui/ChangePinModal";
 import { apiFetch } from "@/lib/api";
 import { useAuthStore } from "@/stores/authStore";
 
@@ -14,6 +15,7 @@ export function UserMenu() {
   const clearToken = useAuthStore((s) => s.clearToken);
   const [name, setName] = useState<string | null>(null);
   const [loggingOut, setLoggingOut] = useState(false);
+  const [pinModalOpen, setPinModalOpen] = useState(false);
 
   const isGameTable = /^\/rooms\/[^/]+$/.test(pathname);
 
@@ -63,16 +65,38 @@ export function UserMenu() {
   }
 
   return (
-    <div className="absolute top-2 right-3 z-40 flex items-center gap-3 rounded-full bg-surface/90 px-3 py-1.5 text-sm shadow-md shadow-black/20 backdrop-blur">
-      <span className="max-w-32 truncate text-foreground">{name}</span>
-      <button
-        type="button"
-        onClick={() => void handleLogout()}
-        disabled={loggingOut}
-        className="rounded-full border border-neutral-600 px-2.5 py-0.5 text-xs text-muted transition hover:border-neutral-400 hover:text-foreground disabled:opacity-50"
+    <>
+      <div
+        className="absolute z-40 flex max-w-[calc(100vw-1.5rem)] items-center gap-1.5 rounded-full bg-surface/90 px-2.5 py-1.5 text-sm shadow-md shadow-black/20 backdrop-blur sm:gap-2 sm:px-3"
+        style={{
+          top: "max(0.5rem, env(safe-area-inset-top))",
+          right: "max(0.75rem, env(safe-area-inset-right))",
+        }}
       >
-        {loggingOut ? "…" : "ログアウト"}
-      </button>
-    </div>
+        <span className="max-w-20 truncate text-foreground sm:max-w-28">
+          {name}
+        </span>
+        <button
+          type="button"
+          onClick={() => setPinModalOpen(true)}
+          className="shrink-0 rounded-full border border-neutral-600 px-2 py-0.5 text-xs text-muted transition hover:border-neutral-400 hover:text-foreground"
+        >
+          PIN
+        </button>
+        <button
+          type="button"
+          onClick={() => void handleLogout()}
+          disabled={loggingOut}
+          className="shrink-0 rounded-full border border-neutral-600 px-2.5 py-0.5 text-xs text-muted transition hover:border-neutral-400 hover:text-foreground disabled:opacity-50"
+        >
+          {loggingOut ? "…" : "ログアウト"}
+        </button>
+      </div>
+
+      <ChangePinModal
+        open={pinModalOpen}
+        onClose={() => setPinModalOpen(false)}
+      />
+    </>
   );
 }

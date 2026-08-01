@@ -7,7 +7,7 @@ import {
 
 const BGM_PATH = "/assets/bgm/table-ambient.wav";
 
-let bgmEnabled = true;
+let bgmEnabled = false;
 let bgmVolume = 0.35;
 let bgmPaused = false;
 let sourceNode: AudioBufferSourceNode | null = null;

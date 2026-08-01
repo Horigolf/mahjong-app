@@ -27,23 +27,23 @@ import { useAuthStore } from "@/stores/authStore";
 import { useGameAudio } from "@/lib/audio/useGameAudio";
 import type { GameType } from "@/types/room";
 
+type UiMode =
+  | { kind: "idle" }
+  | { kind: "chi_select"; choices: ChiChoice[] }
+  | { kind: "riichi_select"; tiles: string[] }
+  | { kind: "kan_select"; choices: KanChoice[] };
+
 type GameScreenProps = {
   roomId: string;
   kyokuId: string;
   roomCode: string;
   gameType: GameType;
   seatNames: Record<number, string>;
-  /** rooms.rule_config.se（未設定は true） */
+  /** rooms.rule_config.se（未設定は false） */
   seEnabled?: boolean;
-  /** rooms.rule_config.bgm（未設定は true） */
+  /** rooms.rule_config.bgm（未設定は false） */
   bgmEnabled?: boolean;
 };
-
-type UiMode =
-  | { kind: "idle" }
-  | { kind: "chi_select"; choices: ChiChoice[] }
-  | { kind: "riichi_select"; tiles: string[] }
-  | { kind: "kan_select"; choices: KanChoice[] };
 
 /**
  * Realtime + gameStore を MahjongTable に接続する対局画面本体。
@@ -54,8 +54,8 @@ export function GameScreen({
   roomCode,
   gameType,
   seatNames,
-  seEnabled = true,
-  bgmEnabled = true,
+  seEnabled = false,
+  bgmEnabled = false,
 }: GameScreenProps) {
   const { resync, dismissResult } = useGameRealtime(kyokuId, roomId);
   const audio = useGameAudio({ se: seEnabled, bgm: bgmEnabled });
@@ -496,8 +496,16 @@ export function GameScreen({
           unlocked: audio.unlocked,
           paused: audio.paused,
           volume: audio.volume,
+          seOn: audio.seOn,
+          bgmOn: audio.bgmOn,
           onUnlock: () => {
             void audio.handleUnlockClick();
+          },
+          onToggleSe: () => {
+            void audio.handleToggleSe();
+          },
+          onToggleBgm: () => {
+            void audio.handleToggleBgm();
           },
           onTogglePause: () => {
             void audio.handleTogglePause();

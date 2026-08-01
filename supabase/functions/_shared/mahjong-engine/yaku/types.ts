@@ -46,6 +46,11 @@ export type WinContext = {
   /** 場風。1z=東 2z=南 */
   roundWind: Tile;
   gameType: "yonma" | "sanma";
+  /**
+   * 部屋の rule_config をそのまま渡す。
+   * 例: { kuitan: false, akaDora: true, ... }
+   */
+  ruleConfig: Record<string, unknown>;
 };
 
 export type YakuResult = {

@@ -25,6 +25,7 @@ import {
   DEAD_WALL_COUNT,
   getKyokuState,
   KYOTAKU_POINTS_PER_STICK,
+  markHasWon,
   meldsFromHand,
   playerCountFor,
   revealUraDoraIndicators,
@@ -187,6 +188,7 @@ Deno.serve(async (req) => {
     seatWind: seatWindFor(mySeat, dealerSeat, gameType),
     roundWind: roundWindToTile(state.kyoku.round_wind),
     gameType,
+    ruleConfig: (state.room.rule_config ?? {}) as Record<string, unknown>,
   };
 
   const yaku = detectYaku(context);
@@ -264,7 +266,15 @@ Deno.serve(async (req) => {
 
   const { error: scoresError } = await supabase
     .from("hanchans")
-    .update({ scores, kyotaku: 0 })
+    .update({
+      scores,
+      kyotaku: 0,
+      has_won: markHasWon(
+        state.hanchan.has_won as Record<string, boolean> | undefined,
+        mySeat,
+        playerCount,
+      ),
+    })
     .eq("id", state.hanchan.id as string);
   if (scoresError) {
     return jsonResponse({ error: scoresError.message }, 500);

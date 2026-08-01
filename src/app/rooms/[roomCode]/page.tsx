@@ -36,8 +36,8 @@ export default async function RoomGamePage({ params }: GamePageProps) {
 
   const roomId = room.id as string;
   const ruleConfig = (room.rule_config ?? {}) as RoomRuleConfig;
-  const seEnabled = ruleConfig.se !== false;
-  const bgmEnabled = ruleConfig.bgm !== false;
+  const seEnabled = ruleConfig.se === true;
+  const bgmEnabled = ruleConfig.bgm === true;
 
   const { data: seatRows } = await supabase
     .from("room_seats")

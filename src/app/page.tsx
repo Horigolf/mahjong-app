@@ -28,11 +28,19 @@ export default function HomePage() {
   const [joinError, setJoinError] = useState<string | null>(null);
   const [loadingList, setLoadingList] = useState(true);
   const [joiningCode, setJoiningCode] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
 
   const fetchRooms = useCallback(async () => {
     setListError(null);
     try {
       await useAuthStore.getState().hydrateToken();
+      const meRes = await apiFetch("/api/auth/me");
+      if (meRes.ok) {
+        const me = (await meRes.json()) as { isAdmin?: boolean };
+        setIsAdmin(Boolean(me.isAdmin));
+      } else {
+        setIsAdmin(false);
+      }
       const response = await apiFetch("/api/rooms");
       if (response.status === 401) {
         router.push("/login");
@@ -142,34 +150,42 @@ export default function HomePage() {
   return (
     <main className="flex h-full w-full items-center justify-center px-6 py-3">
       <div className="w-full max-w-xl">
-        <div className="mb-3 flex items-end justify-between gap-3">
-          <div>
+        <div className="mb-3 pr-[min(11rem,42vw)]">
+          <div className="flex flex-wrap items-center gap-2">
             <h1 className="text-lg font-semibold tracking-wide text-foreground">
               対局部屋
             </h1>
-            <p className="mt-0.5 text-xs text-muted">
-              知り合い同士向け・作成済みの部屋から選んで入室
-            </p>
+            <button
+              type="button"
+              onClick={() => {
+                setLoadingList(true);
+                void fetchRooms();
+              }}
+              className="rounded-lg border border-neutral-600 px-2.5 py-1 text-xs text-muted transition hover:border-neutral-400 hover:text-foreground"
+            >
+              更新
+            </button>
           </div>
-          <button
-            type="button"
-            onClick={() => {
-              setLoadingList(true);
-              void fetchRooms();
-            }}
-            className="rounded-lg border border-neutral-600 px-2.5 py-1 text-xs text-muted transition hover:border-neutral-400 hover:text-foreground"
-          >
-            更新
-          </button>
+          <p className="mt-0.5 text-xs text-muted">
+            知り合い同士向け・作成済みの部屋から選んで入室
+          </p>
         </div>
 
-        <div className="mb-4">
+        <div className="mb-4 flex flex-col gap-2">
           <Link
             href="/rooms/create"
             className="flex h-11 items-center justify-center rounded-xl bg-neutral-100 text-sm font-semibold text-neutral-900 transition hover:bg-white"
           >
             新しい部屋を作る
           </Link>
+          {isAdmin ? (
+            <Link
+              href="/admin"
+              className="flex h-9 items-center justify-center rounded-xl border border-neutral-600 text-xs text-muted transition hover:border-neutral-400 hover:text-foreground"
+            >
+              管理（製作者）
+            </Link>
+          ) : null}
         </div>
 
         {joinError ? (

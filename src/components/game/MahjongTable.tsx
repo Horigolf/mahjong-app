@@ -44,7 +44,11 @@ export type MahjongTableProps = {
     unlocked: boolean;
     paused: boolean;
     volume: number;
+    seOn: boolean;
+    bgmOn: boolean;
     onUnlock: () => void;
+    onToggleSe: () => void;
+    onToggleBgm: () => void;
     onTogglePause: () => void;
     onVolume: (volume: number) => void;
   };
@@ -211,11 +215,15 @@ export function MahjongTable({
 
       {/* 右上: システム用（設定 / 将来 BGM・戦績）。プレイヤー情報は置かない */}
       <GameSystemTray
-        bgmAvailable={audioTray?.bgmAvailable ?? false}
+        bgmAvailable={audioTray?.bgmAvailable ?? true}
         unlocked={audioTray?.unlocked ?? false}
         paused={audioTray?.paused ?? true}
         volume={audioTray?.volume ?? 0.35}
+        seOn={audioTray?.seOn ?? false}
+        bgmOn={audioTray?.bgmOn ?? false}
         onUnlock={audioTray?.onUnlock ?? (() => {})}
+        onToggleSe={audioTray?.onToggleSe ?? (() => {})}
+        onToggleBgm={audioTray?.onToggleBgm ?? (() => {})}
         onTogglePause={audioTray?.onTogglePause ?? (() => {})}
         onVolume={audioTray?.onVolume ?? (() => {})}
         onAbortHanchan={onAbortHanchan}

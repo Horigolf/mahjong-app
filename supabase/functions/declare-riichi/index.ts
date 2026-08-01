@@ -62,6 +62,7 @@ function menzenContextFromMelds(
     seatWind: "1z",
     roundWind: "1z",
     gameType: "yonma",
+    ruleConfig: {},
   };
 }
 

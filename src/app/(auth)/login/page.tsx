@@ -74,9 +74,9 @@ function LoginForm() {
 
       <form
         onSubmit={handleSubmit}
-        className="flex flex-row items-end gap-3 rounded-2xl bg-surface px-4 py-3 shadow-lg shadow-black/30"
+        className="flex flex-col gap-3 rounded-2xl bg-surface px-4 py-3 shadow-lg shadow-black/30 sm:flex-row sm:items-end"
       >
-        <div className="flex min-w-0 flex-1 flex-col gap-1">
+        <div className="flex min-w-0 w-full flex-col gap-1 sm:flex-1">
           <label htmlFor="name" className="text-xs text-muted">
             名前
           </label>
@@ -88,41 +88,43 @@ function LoginForm() {
             maxLength={20}
             value={name}
             onChange={(e) => setName(e.target.value)}
-            className="h-11 rounded-lg border border-neutral-600 bg-neutral-900 px-3 text-base text-foreground outline-none focus:border-neutral-400"
+            className="h-11 w-full rounded-lg border border-neutral-600 bg-neutral-900 px-3 text-base text-foreground outline-none focus:border-neutral-400"
             placeholder="プレイヤー名"
             required
           />
         </div>
 
-        <div className="flex w-28 shrink-0 flex-col gap-1">
-          <label htmlFor="pin" className="text-xs text-muted">
-            PIN（4桁）
-          </label>
-          <input
-            id="pin"
-            name="pin"
-            type="password"
-            inputMode="numeric"
-            autoComplete="current-password"
-            pattern="\d{4}"
-            maxLength={4}
-            value={pin}
-            onChange={(e) =>
-              setPin(e.target.value.replace(/\D/g, "").slice(0, 4))
-            }
-            className="h-11 rounded-lg border border-neutral-600 bg-neutral-900 px-3 text-center text-base tracking-[0.3em] text-foreground outline-none focus:border-neutral-400"
-            placeholder="••••"
-            required
-          />
-        </div>
+        <div className="flex w-full gap-3 sm:w-auto sm:contents">
+          <div className="flex min-w-0 flex-1 flex-col gap-1 sm:w-28 sm:flex-none sm:shrink-0">
+            <label htmlFor="pin" className="text-xs text-muted">
+              PIN（4桁）
+            </label>
+            <input
+              id="pin"
+              name="pin"
+              type="password"
+              inputMode="numeric"
+              autoComplete="current-password"
+              pattern="\d{4}"
+              maxLength={4}
+              value={pin}
+              onChange={(e) =>
+                setPin(e.target.value.replace(/\D/g, "").slice(0, 4))
+              }
+              className="h-11 w-full rounded-lg border border-neutral-600 bg-neutral-900 px-3 text-center text-base tracking-[0.3em] text-foreground outline-none focus:border-neutral-400"
+              placeholder="••••"
+              required
+            />
+          </div>
 
-        <button
-          type="submit"
-          disabled={submitting}
-          className="h-11 shrink-0 min-w-28 rounded-lg bg-neutral-100 px-4 text-sm font-semibold text-neutral-900 transition enabled:hover:bg-white disabled:opacity-50"
-        >
-          {submitting ? "確認中…" : "ログイン"}
-        </button>
+          <button
+            type="submit"
+            disabled={submitting}
+            className="h-11 min-w-0 flex-1 rounded-lg bg-neutral-100 px-4 text-sm font-semibold text-neutral-900 transition enabled:hover:bg-white disabled:opacity-50 sm:w-auto sm:flex-none sm:min-w-28"
+          >
+            {submitting ? "確認中…" : "ログイン"}
+          </button>
+        </div>
       </form>
 
       {error ? (

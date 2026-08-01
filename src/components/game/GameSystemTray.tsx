@@ -7,7 +7,11 @@ type GameSystemTrayProps = {
   unlocked: boolean;
   paused: boolean;
   volume: number;
+  seOn: boolean;
+  bgmOn: boolean;
   onUnlock: () => void;
+  onToggleSe: () => void;
+  onToggleBgm: () => void;
   onTogglePause: () => void;
   onVolume: (volume: number) => void;
   onAbortHanchan?: () => void;
@@ -23,7 +27,11 @@ export function GameSystemTray({
   unlocked,
   paused,
   volume,
+  seOn,
+  bgmOn,
   onUnlock,
+  onToggleSe,
+  onToggleBgm,
   onTogglePause,
   onVolume,
   onAbortHanchan,
@@ -50,24 +58,55 @@ export function GameSystemTray({
       ) : null}
 
       {bgmAvailable ? (
-        <div className="pointer-events-auto flex items-center gap-1.5 rounded-md bg-[#0f241c]/85 px-1.5 py-1 ring-1 ring-[#d4c4a0]/30 backdrop-blur-sm">
-          <button
-            type="button"
-            onClick={onTogglePause}
-            title={paused ? "BGM再生" : "BGM一時停止"}
-            aria-label={paused ? "BGM再生" : "BGM一時停止"}
-            className="flex h-7 w-7 items-center justify-center rounded text-[#d4c4a0] hover:text-[#f8f1df]"
-          >
-            {paused ? (
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
-                <path d="M8 5v14l11-7z" />
-              </svg>
-            ) : (
-              <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
-                <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
-              </svg>
-            )}
-          </button>
+        <div className="pointer-events-auto flex flex-col items-end gap-1 rounded-md bg-[#0f241c]/85 px-1.5 py-1 ring-1 ring-[#d4c4a0]/30 backdrop-blur-sm">
+          <div className="flex items-center gap-1">
+            <button
+              type="button"
+              onClick={onToggleSe}
+              title={seOn ? "SEをOFF" : "SEをON"}
+              aria-pressed={seOn}
+              className={`rounded px-1.5 py-0.5 text-[0.6rem] font-semibold ${
+                seOn
+                  ? "bg-[#c9a227]/25 text-[#f8f1df]"
+                  : "text-[#d4c4a0]/70 hover:text-[#f8f1df]"
+              }`}
+              style={{ fontFamily: "var(--font-game-ui), sans-serif" }}
+            >
+              SE
+            </button>
+            <button
+              type="button"
+              onClick={onToggleBgm}
+              title={bgmOn ? "BGMをOFF" : "BGMをON"}
+              aria-pressed={bgmOn}
+              className={`rounded px-1.5 py-0.5 text-[0.6rem] font-semibold ${
+                bgmOn
+                  ? "bg-[#c9a227]/25 text-[#f8f1df]"
+                  : "text-[#d4c4a0]/70 hover:text-[#f8f1df]"
+              }`}
+              style={{ fontFamily: "var(--font-game-ui), sans-serif" }}
+            >
+              BGM
+            </button>
+            <button
+              type="button"
+              onClick={onTogglePause}
+              disabled={!bgmOn}
+              title={paused ? "BGM再生" : "BGM一時停止"}
+              aria-label={paused ? "BGM再生" : "BGM一時停止"}
+              className="flex h-7 w-7 items-center justify-center rounded text-[#d4c4a0] hover:text-[#f8f1df] disabled:opacity-40"
+            >
+              {paused || !bgmOn ? (
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
+                  <path d="M8 5v14l11-7z" />
+                </svg>
+              ) : (
+                <svg viewBox="0 0 24 24" className="h-3.5 w-3.5" fill="currentColor" aria-hidden>
+                  <path d="M6 5h4v14H6zm8 0h4v14h-4z" />
+                </svg>
+              )}
+            </button>
+          </div>
           <label className="flex items-center gap-1" title="BGM音量">
             <span className="sr-only">BGM音量</span>
             <input
@@ -76,8 +115,9 @@ export function GameSystemTray({
               max={1}
               step={0.05}
               value={volume}
+              disabled={!bgmOn}
               onChange={(e) => onVolume(Number(e.target.value))}
-              className="h-1 w-16 accent-[#c9a227]"
+              className="h-1 w-16 accent-[#c9a227] disabled:opacity-40"
             />
           </label>
         </div>

@@ -6,9 +6,11 @@ export type RoomRuleConfig = {
   akaDora: boolean;
   kuitan: boolean;
   atozuke: boolean;
-  /** 効果音（未設定時は true） */
+  /** 焼き鳥（未和了者が終了時にペナルティ）。未設定は false */
+  yakitori?: boolean;
+  /** 効果音（未設定時は false＝仮合成音がデフォルトで鳴らない） */
   se?: boolean;
-  /** BGM（未設定時は true） */
+  /** BGM（未設定時は false） */
   bgm?: boolean;
 };
 

@@ -53,7 +53,10 @@ export default function RootLayout({
     >
       <body className="relative flex min-h-dvh w-full flex-col bg-background text-foreground">
         <UserMenu />
-        <div className="flex min-h-0 min-w-0 flex-1 flex-col">{children}</div>
+        {/* ノッチ分のみ確保。ログアウト欄は absolute で右上に載せる */}
+        <div className="flex min-h-0 min-w-0 flex-1 flex-col pt-[env(safe-area-inset-top)] pb-[env(safe-area-inset-bottom)]">
+          {children}
+        </div>
       </body>
     </html>
   );

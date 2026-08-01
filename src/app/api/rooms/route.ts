@@ -10,13 +10,15 @@ import type { GameType, LengthType, RoomListItem } from "@/types/room";
 
 /** 待機中・対局中の部屋の同時上限（終了済みは含めない） */
 const MAX_ACTIVE_ROOMS = 8;
-const SEAT_COUNT = 4;
 const ROOM_CODE_MAX_ATTEMPTS = 20;
 
 type CreateRoomBody = {
+  gameType?: unknown;
+  lengthType?: unknown;
   akaDora?: unknown;
   kuitan?: unknown;
   atozuke?: unknown;
+  yakitori?: unknown;
   se?: unknown;
   bgm?: unknown;
 };
@@ -182,12 +184,37 @@ export async function POST(request: Request) {
     );
   }
 
+  const gameType =
+    body.gameType === "yonma" || body.gameType === "sanma"
+      ? (body.gameType as GameType)
+      : null;
+  const lengthType =
+    body.lengthType === "tonpuusen" || body.lengthType === "hanchan"
+      ? (body.lengthType as LengthType)
+      : null;
+
+  if (!gameType) {
+    return NextResponse.json(
+      { error: "gameType は yonma または sanma を指定してください" },
+      { status: 400 },
+    );
+  }
+  if (!lengthType) {
+    return NextResponse.json(
+      { error: "lengthType は tonpuusen または hanchan を指定してください" },
+      { status: 400 },
+    );
+  }
+
+  const seatCount = maxSeatsFor(gameType);
+
   const ruleConfig = {
     akaDora: asBoolean(body.akaDora, true),
     kuitan: asBoolean(body.kuitan, true),
     atozuke: asBoolean(body.atozuke, true),
-    se: asBoolean(body.se, true),
-    bgm: asBoolean(body.bgm, true),
+    yakitori: asBoolean(body.yakitori, false),
+    se: asBoolean(body.se, false),
+    bgm: asBoolean(body.bgm, false),
   };
 
   const supabase = createServiceClient();
@@ -226,8 +253,8 @@ export async function POST(request: Request) {
       .from("rooms")
       .insert({
         room_code: roomCode,
-        game_type: "yonma",
-        length_type: "hanchan",
+        game_type: gameType,
+        length_type: lengthType,
         rule_config: ruleConfig,
         status: "waiting",
         host_user_id: user.id,
@@ -256,7 +283,7 @@ export async function POST(request: Request) {
     );
   }
 
-  const seats = Array.from({ length: SEAT_COUNT }, (_, seatIndex) => ({
+  const seats = Array.from({ length: seatCount }, (_, seatIndex) => ({
     room_id: room.id,
     seat_index: seatIndex,
     user_id: seatIndex === 0 ? user.id : null,
@@ -280,6 +307,8 @@ export async function POST(request: Request) {
       room: {
         id: room.id,
         roomCode: room.room_code,
+        gameType,
+        lengthType,
       },
     },
     { status: 201 },
