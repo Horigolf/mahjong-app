@@ -1,5 +1,6 @@
 import { Shippori_Mincho, Zen_Kaku_Gothic_New } from "next/font/google";
 import { RoomAuthGate } from "@/components/auth/RoomAuthGate";
+import { RoomErrorBoundary } from "@/components/ui/RoomErrorBoundary";
 import { GameOrientationGate } from "@/components/ui/GameOrientationGate";
 
 const gameDisplay = Shippori_Mincho({
@@ -19,6 +20,7 @@ const gameUi = Zen_Kaku_Gothic_New({
 /**
  * /rooms/[roomCode] 配下のレイアウト。
  * 認証は RoomAuthGate（タブごとの sessionStorage）で行う。
+ * レンダー例外は RoomErrorBoundary で捕捉する。
  */
 export default function RoomCodeLayout({
   children,
@@ -30,10 +32,12 @@ export default function RoomCodeLayout({
       className={`${gameDisplay.variable} ${gameUi.variable} flex min-h-0 min-w-0 flex-1 flex-col`}
       style={{ minHeight: "100dvh" }}
     >
-      <RoomAuthGate>
-        <GameOrientationGate />
-        {children}
-      </RoomAuthGate>
+      <RoomErrorBoundary label="rooms-layout">
+        <RoomAuthGate>
+          <GameOrientationGate />
+          {children}
+        </RoomAuthGate>
+      </RoomErrorBoundary>
     </div>
   );
 }

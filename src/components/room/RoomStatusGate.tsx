@@ -60,6 +60,10 @@ export function RoomStatusGate({
         setStatus(result);
       } catch (e) {
         if (cancelled) return;
+        console.error("[RoomStatusGate] get-room-status failed:", e);
+        if (e instanceof Error) {
+          console.error("[RoomStatusGate] stack:", e.stack);
+        }
         const message =
           e instanceof Error ? e.message : "部屋状態の取得に失敗しました";
         // 非参加者・未認証などはトップへ

@@ -1,6 +1,5 @@
 import { notFound } from "next/navigation";
-import { GameScreen } from "@/components/game/GameScreen";
-import { RoomStatusGate } from "@/components/room/RoomStatusGate";
+import { RoomGameContent } from "@/components/room/RoomGameContent";
 import { createServiceClient } from "@/lib/supabase/admin";
 import type { GameType, RoomRuleConfig } from "@/types/room";
 
@@ -52,26 +51,13 @@ export default async function RoomGamePage({ params }: GamePageProps) {
   }
 
   return (
-    <RoomStatusGate roomId={roomId} roomCode={roomCode} expected="game">
-      {(status) =>
-        status.kyokuId ? (
-          <main className="fixed inset-0 z-0 h-svh max-h-svh w-full overflow-hidden overscroll-none supports-[height:100dvh]:h-dvh supports-[height:100dvh]:max-h-dvh">
-            <GameScreen
-              roomId={roomId}
-              kyokuId={status.kyokuId}
-              roomCode={roomCode}
-              gameType={room.game_type as GameType}
-              seatNames={seatNames}
-              seEnabled={seEnabled}
-              bgmEnabled={bgmEnabled}
-            />
-          </main>
-        ) : (
-          <div className="flex min-h-dvh items-center justify-center text-sm text-muted">
-            対局データがありません
-          </div>
-        )
-      }
-    </RoomStatusGate>
+    <RoomGameContent
+      roomId={roomId}
+      roomCode={roomCode}
+      gameType={room.game_type as GameType}
+      seatNames={seatNames}
+      seEnabled={seEnabled}
+      bgmEnabled={bgmEnabled}
+    />
   );
 }

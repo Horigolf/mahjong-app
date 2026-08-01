@@ -81,6 +81,10 @@ export function RoomLobby({ room }: RoomLobbyProps) {
       });
       router.push(`/rooms/${room.roomCode}`);
     } catch (e) {
+      console.error("[RoomLobby] start-hanchan failed:", e);
+      if (e instanceof Error) {
+        console.error("[RoomLobby] stack:", e.stack);
+      }
       setStartError(
         e instanceof Error ? e.message : "対局の開始に失敗しました",
       );
