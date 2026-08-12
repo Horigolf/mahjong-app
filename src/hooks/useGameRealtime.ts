@@ -142,6 +142,7 @@ export function useGameRealtime(kyokuId: string, roomId: string) {
   const loadHandRef = useRef<(id: string) => Promise<void>>(async () => {});
   const dismissResultRef = useRef<() => void>(() => {});
   const syncingRef = useRef(false);
+  const pendingLoadIdRef = useRef<string | null>(null);
 
   useEffect(() => {
     kyokuIdRef.current = kyokuId;
@@ -154,16 +155,25 @@ export function useGameRealtime(kyokuId: string, roomId: string) {
     store.setLoading(true);
 
     async function loadHand(id: string) {
-      if (!id || syncingRef.current) return;
+      if (!id) return;
+      if (syncingRef.current) {
+        pendingLoadIdRef.current = id;
+        return;
+      }
       syncingRef.current = true;
       try {
-        await useAuthStore.getState().hydrateToken();
-        const snapshot = await fetchMyHand(id);
-        if (cancelled) return;
-        useGameStore.getState().applySnapshot(snapshot);
-        kyokuIdRef.current = snapshot.publicState.kyokuId;
-        mySeatRef.current = snapshot.mySeat;
-        turnSeatRef.current = snapshot.publicState.currentTurnSeat;
+        let targetId: string | null = id;
+        while (targetId && !cancelled) {
+          pendingLoadIdRef.current = null;
+          await useAuthStore.getState().hydrateToken();
+          const snapshot = await fetchMyHand(targetId);
+          if (cancelled) return;
+          useGameStore.getState().applySnapshot(snapshot);
+          kyokuIdRef.current = snapshot.publicState.kyokuId;
+          mySeatRef.current = snapshot.mySeat;
+          turnSeatRef.current = snapshot.publicState.currentTurnSeat;
+          targetId = pendingLoadIdRef.current;
+        }
       } catch (e) {
         if (cancelled) return;
         useGameStore.getState().setLoading(false);
@@ -172,6 +182,11 @@ export function useGameRealtime(kyokuId: string, roomId: string) {
         );
       } finally {
         syncingRef.current = false;
+        if (!cancelled && pendingLoadIdRef.current) {
+          const again = pendingLoadIdRef.current;
+          pendingLoadIdRef.current = null;
+          void loadHand(again);
+        }
       }
     }
 
@@ -248,6 +263,12 @@ export function useGameRealtime(kyokuId: string, roomId: string) {
               },
             };
           });
+          // 鳴き対象席は必ず最新手牌を取り直す（ボタン欠落のフリーズ防止）
+          if (mySeat != null && payload.eligibleSeats.includes(mySeat)) {
+            void loadHand(kyokuIdRef.current);
+          } else if (mySeat != null && payload.discardSeat === mySeat) {
+            void loadHand(kyokuIdRef.current);
+          }
           break;
         }
         case "call_skipped": {

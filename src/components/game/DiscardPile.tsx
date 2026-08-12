@@ -13,10 +13,16 @@ type DiscardPileProps = {
   tileSize?: "medium" | "small" | "tiny";
   /** 席の向き（自分0 / 上家90 / 対面180 / 下家270） */
   orientation?: TileOrientation;
-  /** 1行あたりの枚数（対面・自分は6、左右の狭い列は2〜3） */
-  columns?: number;
-  /** 表示する最大行数。超えた分は末尾を優先表示 */
-  maxRows?: number;
+  /**
+   * 1列（または1行）あたりの枚数。実卓どおり既定は 6。
+   * 自分・対面は横に6枚→次の段、左右は縦に6枚→隣の列。
+   */
+  lineLength?: number;
+  /**
+   * row: 6枚で折り返し下段へ（自分・対面）
+   * column: 6枚で折り返し横列へ（左右席）
+   */
+  flow?: "row" | "column";
   className?: string;
 };
 
@@ -30,27 +36,26 @@ function isRenderableDiscard(
 
 /**
  * 捨て牌（河）。
- * 牌の向きは orientation で卓上どおり（各席の正面が正立）にする。
- * リーチ宣言牌はその席から見て横向き。
+ * 実卓どおり 6 枚で次の段（または次の列）へ進む。全枚表示が基本。
  */
 export function DiscardPile({
   discards,
   tileSize = "small",
   orientation = 0,
-  columns = 6,
-  maxRows,
+  lineLength = 6,
+  flow = "row",
   className = "",
 }: DiscardPileProps) {
   const [focused, setFocused] = useState<DiscardEntry | null>(null);
 
-  const cols = Math.max(1, Math.min(6, Math.floor(columns)));
+  const len = Math.max(1, Math.min(7, Math.floor(lineLength)));
   const valid = discards.filter(isRenderableDiscard);
-  const visible =
-    maxRows != null && maxRows > 0 ? valid.slice(-maxRows * cols) : valid;
 
-  if (visible.length === 0) {
+  if (valid.length === 0) {
     return null;
   }
+
+  const isColumnFlow = flow === "column";
 
   return (
     <>
@@ -59,13 +64,22 @@ export function DiscardPile({
           "inline-grid gap-x-[2px] gap-y-[3px] content-start justify-items-center",
           className,
         ].join(" ")}
-        style={{ gridTemplateColumns: `repeat(${cols}, max-content)` }}
+        style={
+          isColumnFlow
+            ? {
+                gridTemplateRows: `repeat(${len}, max-content)`,
+                gridAutoFlow: "column",
+              }
+            : {
+                gridTemplateColumns: `repeat(${len}, max-content)`,
+              }
+        }
         role="list"
         aria-label="捨て牌"
       >
-        {visible.map((entry, index) => (
+        {valid.map((entry, index) => (
           <div
-            key={`${entry.tile}-${valid.length - visible.length + index}`}
+            key={`${entry.tile}-${index}`}
             role="listitem"
             className="flex items-center justify-center"
           >
@@ -99,7 +113,6 @@ export function DiscardPile({
               捨て牌
               {focused.isRiichiTile ? "（リーチ宣言）" : ""}
             </p>
-            {/* 拡大時は読みやすさ優先で正立 */}
             <Tile tile={focused.tile} size="large" orientation={0} />
             <button
               type="button"

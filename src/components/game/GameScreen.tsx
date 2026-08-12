@@ -1,6 +1,6 @@
 "use client";
 
-import { useCallback, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
 import { MahjongTable } from "@/components/game/MahjongTable";
 import type { ActionItem } from "@/components/game/ActionButtons";
@@ -71,6 +71,9 @@ export function GameScreen({
   const [busy, setBusy] = useState(false);
   const [aborting, setAborting] = useState(false);
   const [mode, setMode] = useState<UiMode>({ kind: "idle" });
+  const [selectedDiscardIndex, setSelectedDiscardIndex] = useState<
+    number | null
+  >(null);
   const router = useRouter();
 
   const selfSeatState = useMemo(() => {
@@ -198,8 +201,14 @@ export function GameScreen({
     if (mode.kind === "kan_select") {
       return "カンする牌を選択";
     }
+    if (isMyTurn && mode.kind === "idle" && selectedDiscardIndex != null) {
+      return "もう一度タップで打牌";
+    }
+    if (isMyTurn && mode.kind === "idle") {
+      return "牌を選んで打牌";
+    }
     return null;
-  }, [mode]);
+  }, [mode, isMyTurn, selectedDiscardIndex]);
 
   const canDiscard =
     !busy &&
@@ -210,6 +219,12 @@ export function GameScreen({
   const discardHighlightTiles =
     mode.kind === "riichi_select" ? mode.tiles : null;
 
+  useEffect(() => {
+    if (!canDiscard) {
+      setSelectedDiscardIndex(null);
+    }
+  }, [canDiscard]);
+
   const run = useCallback(
     async (fn: () => Promise<void>) => {
       if (busy) return;
@@ -218,6 +233,7 @@ export function GameScreen({
       try {
         await fn();
         setMode({ kind: "idle" });
+        setSelectedDiscardIndex(null);
         await resync();
       } catch (e) {
         setActionError(e instanceof Error ? e.message : "操作に失敗しました");
@@ -229,7 +245,7 @@ export function GameScreen({
   );
 
   const handleTileClick = useCallback(
-    async (tile: string) => {
+    async (tile: string, index: number) => {
       if (!publicState || busy) return;
 
       if (mode.kind === "riichi_select") {
@@ -244,20 +260,24 @@ export function GameScreen({
       }
 
       if (!isMyTurn || mode.kind !== "idle") return;
+
+      // 1タップ目で選択、同じ牌の2タップ目で打牌
+      if (selectedDiscardIndex !== index) {
+        setSelectedDiscardIndex(index);
+        return;
+      }
+
       await run(async () => {
         await callEdgeFunction("discard-tile", {
           kyokuId: publicState.kyokuId,
           tile,
         });
         useGameStore.getState().setMyHand(
-          useGameStore.getState().myHand.filter((t, i, arr) => {
-            const idx = arr.indexOf(tile);
-            return i !== idx;
-          }),
+          useGameStore.getState().myHand.filter((_t, i) => i !== index),
         );
       });
     },
-    [publicState, busy, mode, isMyTurn, run],
+    [publicState, busy, mode, isMyTurn, selectedDiscardIndex, run],
   );
 
   const handleAction = useCallback(
@@ -266,6 +286,7 @@ export function GameScreen({
 
       if (actionId === "cancel") {
         setMode({ kind: "idle" });
+        setSelectedDiscardIndex(null);
         setActionError(null);
         return;
       }
@@ -444,6 +465,22 @@ export function GameScreen({
     return names;
   })();
 
+  const waitingStatus = (() => {
+    if (waitingForOfflineNames.length > 0) return null;
+    const waitSeats =
+      publicState.pendingCallSeats.length > 0
+        ? publicState.pendingCallSeats
+        : [publicState.currentTurnSeat];
+    const names = waitSeats
+      .filter((seat) => seat !== mySeat)
+      .map((seat) => seatNames[seat] ?? `席${seat + 1}`);
+    if (names.length === 0) return null;
+    return {
+      names,
+      isCallWait: publicState.pendingCallSeats.length > 0,
+    };
+  })();
+
   async function handleAbortHanchan() {
     if (aborting) return;
     setAborting(true);
@@ -487,6 +524,7 @@ export function GameScreen({
         seatNames={seatNames}
         onDismissResult={dismissResult}
         waitingForOfflineNames={waitingForOfflineNames}
+        waitingStatus={waitingStatus}
         onAbortHanchan={() => {
           void handleAbortHanchan();
         }}
@@ -515,6 +553,9 @@ export function GameScreen({
         canDiscard={canDiscard}
         discardEnabledTiles={discardEnabledTiles}
         discardHighlightTiles={discardHighlightTiles}
+        selectedDiscardIndex={
+          mode.kind === "idle" ? selectedDiscardIndex : null
+        }
         onDiscardTile={handleTileClick}
         onAction={handleAction}
       />

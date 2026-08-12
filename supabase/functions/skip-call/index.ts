@@ -123,14 +123,32 @@ Deno.serve(async (req) => {
     console.error("appendAction skip_call failed:", e);
   }
 
+  // 同時スキップの取りこぼしを防ぐ: 自分の席がまだ pending に含まれる場合だけ更新
   if (remainingSeats.length > 0) {
-    const { error: updateError } = await supabase
+    const { data: updatedRows, error: updateError } = await supabase
       .from("kyokus")
       .update({ pending_call_seats: remainingSeats })
-      .eq("id", kyokuId);
+      .eq("id", kyokuId)
+      .contains("pending_call_seats", [mySeat])
+      .select("id");
 
     if (updateError) {
       return jsonResponse({ error: updateError.message }, 500);
+    }
+
+    if (!updatedRows || updatedRows.length === 0) {
+      // 他リクエストが先に自分を除去済み
+      const { data: fresh } = await supabase
+        .from("kyokus")
+        .select("pending_call_seats")
+        .eq("id", kyokuId)
+        .maybeSingle();
+      return jsonResponse({
+        ok: true,
+        advanced: false,
+        remainingSeats: parsePendingCallSeats(fresh?.pending_call_seats),
+        alreadySkipped: true,
+      });
     }
 
     try {
@@ -150,7 +168,7 @@ Deno.serve(async (req) => {
     });
   }
 
-  // 全員パス → 次席自摸 or 流局
+  // 全員パス → 次席自摸 or 流局（CAS: 自分が最後の pending のときだけ進行）
   const pendingDiscard = state.discards.find((d) => d.id === pendingDiscardId);
   if (!pendingDiscard) {
     return jsonResponse({ error: "鳴き待ちの捨て牌が見つかりません" }, 500);
@@ -166,17 +184,28 @@ Deno.serve(async (req) => {
     handsAfterDiscard.set(seat, (row?.concealed_tiles ?? []) as string[]);
   }
 
-  // 先に pending をクリアしてから進行（advanceAfterDiscard 内でもクリアする）
-  const { error: clearError } = await supabase
+  const { data: clearedRows, error: clearError } = await supabase
     .from("kyokus")
     .update({
       pending_discard_id: null,
       pending_call_seats: [],
     })
-    .eq("id", kyokuId);
+    .eq("id", kyokuId)
+    .eq("pending_discard_id", pendingDiscardId)
+    .contains("pending_call_seats", [mySeat])
+    .select("id");
 
   if (clearError) {
     return jsonResponse({ error: clearError.message }, 500);
+  }
+
+  if (!clearedRows || clearedRows.length === 0) {
+    return jsonResponse({
+      ok: true,
+      advanced: false,
+      remainingSeats: [],
+      alreadyAdvanced: true,
+    });
   }
 
   // state.kyoku.wall は getKyokuState 時点の値。pending 中は wall 未変更なので OK

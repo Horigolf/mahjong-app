@@ -54,6 +54,11 @@ export type MahjongTableProps = {
   };
   /** オフラインで操作待ちのプレイヤー名（帯表示） */
   waitingForOfflineNames?: string[];
+  /** 鳴き待ち・手番待ち（オンライン含む）。切断時は waitingForOfflineNames を優先 */
+  waitingStatus?: {
+    names: string[];
+    isCallWait: boolean;
+  } | null;
   onAbortHanchan?: () => void;
   aborting?: boolean;
   /** 自分の手番で打牌可能 */
@@ -61,7 +66,9 @@ export type MahjongTableProps = {
   /** 打牌可能な牌（リーチ宣言時など） */
   discardEnabledTiles?: string[] | null;
   discardHighlightTiles?: string[] | null;
-  onDiscardTile?: (tile: string) => void;
+  /** 選択中の手牌インデックス（1タップで持ち上げ） */
+  selectedDiscardIndex?: number | null;
+  onDiscardTile?: (tile: string, index: number) => void;
   onAction?: (actionId: string) => void;
 };
 
@@ -137,11 +144,13 @@ export function MahjongTable({
   onDismissResult,
   audioTray,
   waitingForOfflineNames = [],
+  waitingStatus = null,
   onAbortHanchan,
   aborting = false,
   canDiscard = false,
   discardEnabledTiles = null,
   discardHighlightTiles = null,
+  selectedDiscardIndex = null,
   onDiscardTile,
   onAction,
 }: MahjongTableProps) {
@@ -299,12 +308,18 @@ export function MahjongTable({
         className="col-start-2 row-start-3 flex min-h-0 min-w-0 flex-col items-center justify-end gap-0.5 overflow-hidden px-0.5 pb-[max(0.35rem,env(safe-area-inset-bottom))]"
         aria-label="自分の手牌エリア"
       >
-        <div className="flex w-full shrink-0 justify-center overflow-hidden">
+        <div
+          className={[
+            "flex w-full shrink-0 justify-center overflow-visible",
+            "max-[640px]:max-h-[5.5rem] max-[640px]:overflow-y-auto max-[640px]:overflow-x-hidden",
+            "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+          ].join(" ")}
+        >
           <DiscardPile
             discards={self.discards}
             tileSize="tiny"
-            columns={6}
-            maxRows={2}
+            lineLength={6}
+            flow="row"
           />
         </div>
         <div className="flex w-full min-w-0 shrink-0 items-end justify-center gap-1 overflow-x-auto [-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden">
@@ -314,6 +329,7 @@ export function MahjongTable({
             interactive={canDiscard}
             enabledTiles={discardEnabledTiles}
             highlightTiles={discardHighlightTiles}
+            selectedIndex={selectedDiscardIndex}
             onTileClick={onDiscardTile}
           />
           {self.melds.length > 0 ? (
@@ -363,6 +379,27 @@ export function MahjongTable({
             </p>
             <p className="mt-0.5 text-[0.65rem] text-[#f0c0c0]/85">
               切断中です。戻らない場合は右上から対局を中断できます
+            </p>
+          </div>
+        </div>
+      ) : waitingStatus && waitingStatus.names.length > 0 && !result ? (
+        <div
+          className="pointer-events-none absolute inset-x-0 top-[max(0.4rem,env(safe-area-inset-top))] z-[55] flex justify-center px-3"
+          role="status"
+          aria-live="polite"
+        >
+          <div className="max-w-[min(92vw,28rem)] rounded-lg bg-[#0f241c]/92 px-4 py-2 text-center shadow-lg ring-1 ring-[#d4c4a0]/40 backdrop-blur-sm">
+            <p
+              className="text-sm font-semibold text-[#f8f1df]"
+              style={{ fontFamily: "var(--font-game-ui), sans-serif" }}
+            >
+              {waitingStatus.isCallWait
+                ? waitingStatus.names.length === 1
+                  ? `${waitingStatus.names[0]}さんの鳴き応答待ち`
+                  : `${waitingStatus.names.join("・")}さんの鳴き応答待ち`
+                : waitingStatus.names.length === 1
+                  ? `${waitingStatus.names[0]}さんの手番です`
+                  : `${waitingStatus.names.join("・")}さんの手番です`}
             </p>
           </div>
         </div>

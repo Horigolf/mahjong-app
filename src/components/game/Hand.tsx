@@ -6,8 +6,10 @@ type HandProps = {
   interactive?: boolean;
   /** タップ可能な牌（未指定なら interactive 時は全て） */
   enabledTiles?: string[] | null;
-  /** 強調表示する牌 */
+  /** 強調表示する牌（牌種）。selectedIndex がある場合はそちらを優先 */
   highlightTiles?: string[] | null;
+  /** 選択中の牌インデックス（1タップ目で上に上げる） */
+  selectedIndex?: number | null;
   onTileClick?: (tile: string, index: number) => void;
 };
 
@@ -20,6 +22,7 @@ export function Hand({
   interactive = false,
   enabledTiles = null,
   highlightTiles = null,
+  selectedIndex = null,
   onTileClick,
 }: HandProps) {
   const enabledSet = enabledTiles ? new Set(enabledTiles) : null;
@@ -35,15 +38,17 @@ export function Hand({
         const enabled =
           interactive &&
           (enabledSet == null || enabledSet.has(tile));
-        const highlighted = highlightSet?.has(tile) ?? false;
+        const selected = selectedIndex === index;
+        const highlighted =
+          selected || (selectedIndex == null && (highlightSet?.has(tile) ?? false));
 
         return (
           <div
             key={`${tile}-${index}`}
             role="listitem"
             className={[
-              "shrink-0 transition",
-              highlighted ? "-translate-y-1" : "",
+              "shrink-0 transition-transform duration-150",
+              highlighted ? "-translate-y-2" : "",
               interactive && !enabled ? "opacity-35" : "",
             ].join(" ")}
           >

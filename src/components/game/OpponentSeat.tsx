@@ -26,7 +26,6 @@ const SEAT_ORIENTATION: Record<
   OpponentSeatProps["placement"],
   TileOrientation
 > = {
-  // 左右は最初逆だったので入れ替え（対面180は正しい）
   right: 270,
   top: 180,
   left: 90,
@@ -90,15 +89,11 @@ function PlayerBadge({
 
 /**
  * 他家1人分。
- * 捨て牌・副露の向きは実際の卓／一般的な麻雀アプリと同じ
- *（対面は逆さ、左右は横向き＝その席から見て正立）。
+ * 河は実卓どおり 6 枚で次の段／列へ。スクロールは極小画面のみ。
  */
 export function OpponentSeat({ player, placement }: OpponentSeatProps) {
   const isSide = placement === "left" || placement === "right";
   const orientation = SEAT_ORIENTATION[placement];
-  // 左右は牌が横向きになるので 2 列の縦河にして端の列に収める
-  const riverColumns = isSide ? 2 : 6;
-  const riverMaxRows = placement === "top" ? 2 : 8;
 
   const melds =
     player.melds.length > 0 ? (
@@ -123,30 +118,38 @@ export function OpponentSeat({ player, placement }: OpponentSeatProps) {
       </div>
     ) : null;
 
+  // 通常は全体表示。高さの極端に低い端末だけスクロール許容
+  const riverShellClass = isSide
+    ? [
+        "relative z-0 min-h-0 w-max max-w-full shrink overflow-visible",
+        "max-[640px]:max-h-full max-[640px]:overflow-y-auto max-[640px]:overflow-x-hidden",
+        "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+        "flex-1",
+      ].join(" ")
+    : [
+        "relative z-0 w-max max-w-full shrink-0 overflow-visible",
+        "max-[640px]:max-h-[5.5rem] max-[640px]:overflow-y-auto max-[640px]:overflow-x-hidden",
+        "[-ms-overflow-style:none] [scrollbar-width:none] [&::-webkit-scrollbar]:hidden",
+      ].join(" ");
+
   const river = (
-    <div
-      className={[
-        "relative z-0 min-h-0 w-max max-w-full overflow-hidden",
-        isSide ? "flex-1" : "",
-      ].join(" ")}
-      style={{ contain: "paint" }}
-    >
+    <div className={riverShellClass}>
       <DiscardPile
         discards={player.discards}
         tileSize="tiny"
         orientation={orientation}
-        columns={riverColumns}
-        maxRows={riverMaxRows}
+        lineLength={6}
+        flow={isSide ? "column" : "row"}
       />
     </div>
   );
 
   if (placement === "top") {
     return (
-      <div className="flex h-full min-h-0 w-full max-w-full flex-col items-center justify-center gap-0.5 overflow-hidden">
+      <div className="flex h-full min-h-0 w-full max-w-full flex-col items-center justify-center gap-0.5 overflow-visible">
         <PlayerBadge player={player} align="center" />
         {melds}
-        <div className="flex justify-center overflow-hidden">{river}</div>
+        <div className="flex justify-center overflow-visible">{river}</div>
       </div>
     );
   }
@@ -156,7 +159,7 @@ export function OpponentSeat({ player, placement }: OpponentSeatProps) {
   return (
     <div
       className={[
-        "flex h-full min-h-0 w-full max-w-full flex-col gap-1 overflow-hidden py-1",
+        "flex h-full min-h-0 w-full max-w-full flex-col gap-1 overflow-visible py-1",
         alignEnd ? "items-end" : "items-start",
       ].join(" ")}
     >
