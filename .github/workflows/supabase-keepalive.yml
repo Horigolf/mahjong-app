@@ -1,0 +1,60 @@
+# Supabase Free プランの非活動一時停止を防ぐ keepalive。
+# 約3日おきに PostgREST へ軽い SELECT を送り、DB 利用実績を残す。
+#
+# 初回のみ GitHub → Settings → Secrets and variables → Actions に追加:
+#   SUPABASE_URL              例: https://xxxx.supabase.co
+#   SUPABASE_SERVICE_ROLE_KEY Dashboard の service_role（サーバー専用）
+#
+# 手動実行: Actions → Keep Supabase awake → Run workflow
+
+name: Keep Supabase awake
+
+on:
+  schedule:
+    # UTC。日本時間だとだいたい 12:17 / 火・金
+    - cron: "17 3 * * 2,5"
+  workflow_dispatch:
+
+jobs:
+  ping:
+    runs-on: ubuntu-latest
+    timeout-minutes: 5
+    steps:
+      - name: Ping PostgREST (SELECT 1 row)
+        env:
+          SUPABASE_URL: ${{ secrets.SUPABASE_URL }}
+          SUPABASE_SERVICE_ROLE_KEY: ${{ secrets.SUPABASE_SERVICE_ROLE_KEY }}
+        run: |
+          set -euo pipefail
+          if [ -z "${SUPABASE_URL:-}" ] || [ -z "${SUPABASE_SERVICE_ROLE_KEY:-}" ]; then
+            echo "Missing SUPABASE_URL or SUPABASE_SERVICE_ROLE_KEY secrets."
+            exit 1
+          fi
+          BASE="${SUPABASE_URL%/}"
+          # rooms が無くても「接続できた」ことが重要。失敗時は users を試す。
+          CODE=$(curl -sS -o /tmp/keepalive_body.txt -w "%{http_code}" \
+            -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+            -H "Accept: application/json" \
+            -H "Prefer: count=exact" \
+            "${BASE}/rest/v1/rooms?select=id&limit=1" || true)
+          echo "rooms HTTP ${CODE}"
+          cat /tmp/keepalive_body.txt || true
+          echo
+          if [ "${CODE}" != "200" ] && [ "${CODE}" != "206" ]; then
+            CODE=$(curl -sS -o /tmp/keepalive_body.txt -w "%{http_code}" \
+              -H "apikey: ${SUPABASE_SERVICE_ROLE_KEY}" \
+              -H "Authorization: Bearer ${SUPABASE_SERVICE_ROLE_KEY}" \
+              -H "Accept: application/json" \
+              "${BASE}/rest/v1/users?select=id&limit=1" || true)
+            echo "users HTTP ${CODE}"
+            cat /tmp/keepalive_body.txt || true
+            echo
+          fi
+          case "${CODE}" in
+            200|206) echo "Keepalive OK" ;;
+            *)
+              echo "Keepalive failed (project paused or bad secrets?)"
+              exit 1
+              ;;
+          esac
